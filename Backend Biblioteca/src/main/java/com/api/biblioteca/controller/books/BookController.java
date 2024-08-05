@@ -1,8 +1,7 @@
 package com.api.biblioteca.controller.books;
-
-import com.api.biblioteca.dto.books.BookDto;
-import com.api.biblioteca.dto.clients.ClientDto;
 import com.api.biblioteca.exception.ErrorResponse;
+import com.api.biblioteca.dto.books.BookDto;
+
 import com.api.biblioteca.exception.UserNotFoundException;
 import com.api.biblioteca.service.books.BookService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +12,6 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
-import java.awt.print.Book;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,35 +34,38 @@ public class BookController {
     }
 
     @PostMapping
-    public ResponseEntity<BookDto> createBook(@RequestBody BookDto bookDto) {
+    public ResponseEntity<?> createBook(@RequestBody BookDto bookDto) {
         try {
             BookDto savedBook = bookService.saveBook(bookDto);
             return ResponseEntity.ok(savedBook);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(new BookDto(null, null, null, null, null, null, null, null, e.getMessage()));
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new BookDto(null, null, null, null, null, null, null, null, "Internal server error"));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse("Internal server error"));
         }
     }
 
+
     @PutMapping("/{id}")
-    public ResponseEntity<BookDto> updateBook(@PathVariable Long id, @RequestBody BookDto bookDto, @RequestParam(required = false) Long clientId) {
+    public ResponseEntity<?> updateBook(@PathVariable Long id, @RequestBody BookDto bookDto, @RequestParam(required = false) Long clientId) {
         try {
             BookDto updatedBook = bookService.updateBook(id, bookDto, clientId);
             return ResponseEntity.ok(updatedBook);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(new BookDto(null, null, null, null, null, null, null, null, e.getMessage()));
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new BookDto(null, null, null, null, null, null, null, null, "Internal server error"));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse("Internal server error"));
         }
     }
+
+
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getBookById(@PathVariable Long id) {
         try {
             BookDto bookDto = bookService.getBookById(id).orElse(null);
             if (bookDto == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("Client not found"));
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("Book not found"));
             }
             return ResponseEntity.ok(bookDto);
         } catch (Exception e) {
@@ -94,7 +95,4 @@ public class BookController {
         });
         return ResponseEntity.badRequest().body(errors);
     }
-
-
-
 }

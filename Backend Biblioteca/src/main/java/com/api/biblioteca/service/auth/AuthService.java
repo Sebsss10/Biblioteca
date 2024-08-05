@@ -48,6 +48,7 @@ public class AuthService {
         return new AuthDto(token);
     }
 
+
     public AuthDto register(RegisterDto registerDto) {
         validateRegisterDto(registerDto);
 
@@ -72,6 +73,7 @@ public class AuthService {
 
         return new AuthDto(token);
     }
+
 
     private void validateRegisterDto(RegisterDto registerDto) {
         if (registerDto.getPassword() == null || registerDto.getPassword().isEmpty()) {

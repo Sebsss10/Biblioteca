@@ -1,6 +1,5 @@
 package com.api.biblioteca.service.books;
 
-
 import com.api.biblioteca.dto.books.BookDto;
 import com.api.biblioteca.entity.BookPostEntity;
 import com.api.biblioteca.entity.ClientPostEntity;
@@ -19,18 +18,22 @@ import java.util.stream.Collectors;
 @Service
 public class BookServiceMap implements BookService {
 
+    private static final Logger logger = LoggerFactory.getLogger(BookServiceMap.class);
+
     @Autowired
     private BooksPostRepository bookRepository;
 
     @Autowired
     private ClientPostRepository clientRepository;
 
+    @Override
     public List<BookDto> getAllBooks() {
         return bookRepository.findAll().stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
 
+    @Override
     public BookDto saveBook(BookDto bookDto) {
         validateBookDto(bookDto);
 
@@ -42,16 +45,23 @@ public class BookServiceMap implements BookService {
         bookEntity.setPublishedDate(bookDto.getPublishedDate());
         bookEntity.setPrice(bookDto.getPrice());
         bookEntity.setDisponibilidad(bookDto.getDisponibilidad());
-        bookEntity.setClient(null); // No client assigned
+
+        if (bookDto.getClientid() != null && bookDto.getClientid() > 0) {
+            Optional<ClientPostEntity> clientOptional = clientRepository.findById(bookDto.getClientid());
+            if (clientOptional.isPresent()) {
+                bookEntity.setClient(clientOptional.get());
+                logger.info("Client set: {}", clientOptional.get());
+            } else {
+                throw new IllegalArgumentException("Client not found");
+            }
+        } else {
+            bookEntity.setClient(null);
+            logger.info("Client set to null");
+        }
 
         BookPostEntity savedBook = bookRepository.save(bookEntity);
-
         return toDto(savedBook);
     }
-
-    private static final Logger logger = LoggerFactory.getLogger(BookServiceMap.class);
-
-    // Resto del código
 
     @Override
     public BookDto updateBook(Long id, BookDto bookDto, Long clientId) {
@@ -89,34 +99,23 @@ public class BookServiceMap implements BookService {
         return toDto(updatedBook);
     }
 
+
     @Override
     public void deleteBookById(Long id) {
-        try {
-            BookPostEntity entity = this.bookRepository.findById(id)
-                    .orElseThrow(() -> new UserNotFoundException(id));
-            this.bookRepository.delete(entity);
-        } catch (UserNotFoundException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to delete client with ID: " + id, e);
-        }
+        bookRepository.findById(id)
+                .ifPresentOrElse(bookRepository::delete,
+                        () -> { throw new UserNotFoundException(id); });
     }
 
     @Override
     public Optional<BookDto> getBookById(Long id) {
-        try {
-            BookPostEntity entity = this.bookRepository.findById(id)
-                    .orElseThrow(() -> new UserNotFoundException(id));
-            return Optional.of(toDto(entity));
-        } catch (UserNotFoundException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to fetch client by ID: " + id, e);
-        }
+        return Optional.ofNullable(bookRepository.findById(id)
+                .map(this::toDto)
+                .orElseThrow(() -> new UserNotFoundException(id)));
     }
 
     private BookDto toDto(BookPostEntity entity) {
-        String clientName = (entity.getClient() != null) ? entity.getClient().getName() : null;
+        Long clientId = (entity.getClient() != null) ? entity.getClient().getId() : null;
         return new BookDto(
                 entity.getId(),
                 entity.getTitle(),
@@ -126,7 +125,7 @@ public class BookServiceMap implements BookService {
                 entity.getPublishedDate(),
                 entity.getPrice(),
                 entity.getDisponibilidad(),
-                clientName
+                clientId
         );
     }
 

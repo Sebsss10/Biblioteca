@@ -39,10 +39,14 @@ public class AuthController {
             AuthDto authDto = authService.register(registerDto);
             return ResponseEntity.ok(authDto);
         } catch (IllegalArgumentException e) {
+            e.printStackTrace(); // Imprime la excepción en los logs
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse(e.getMessage()));
         } catch (Exception e) {
+            e.printStackTrace(); // Imprime la excepción en los logs
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse("An unexpected error occurred"));
         }
     }
 
 }
+
+
